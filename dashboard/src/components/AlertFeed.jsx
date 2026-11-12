@@ -33,12 +33,10 @@ const verdictLabel = {
 const pct = (value) => Math.round((Number(value) || 0) * 100);
 
 const verdictSummary = {
-  HACKER: (a) =>
-    `Session from ${a.sourceIp}${a.locationLabel ? ` (${a.locationLabel})` : ""} was flagged as a likely threat. Review the evidence and response status.`,
-  FORGETFUL_USER: (a) =>
-    `${a.userName || a.sourceIp} was flagged for analyst review after unusual sign-in behaviour.`,
-  LEGITIMATE: (a) => `${a.userName || a.sourceIp} was classified as normal. No response is currently indicated.`,
-  INCONCLUSIVE: (a) => `There is not enough signal to classify ${a.sourceIp} confidently.`,
+  HACKER: (a) => `Likely threat from ${a.sourceIp}${a.locationLabel ? ` (${a.locationLabel})` : ""}.`,
+  FORGETFUL_USER: (a) => `Unusual sign-in behaviour from ${a.userName || a.sourceIp}. Needs review.`,
+  LEGITIMATE: (a) => `Normal activity from ${a.userName || a.sourceIp}.`,
+  INCONCLUSIVE: (a) => `Not enough signal to classify ${a.sourceIp}.`,
 };
 
 const ALERT_CAP = 50;
@@ -58,7 +56,7 @@ function AlertCard({ alert, onOpen }) {
 
   return (
     <div
-      className={`soc-enter rounded-xl border border-l-[3px] border-soc-border/80 bg-soc-panelSoft/50 p-3.5 transition-colors hover:bg-soc-panelSoft ${
+      className={`rounded-lg border border-l-[3px] border-soc-border bg-soc-panelSoft/50 p-3 transition-colors hover:bg-soc-panelSoft ${
         verdictRail[verdict] || verdictRail.INCONCLUSIVE
       }`}
     >
@@ -73,7 +71,7 @@ function AlertCard({ alert, onOpen }) {
           </span>
           <span className="truncate text-sm font-medium text-soc-text">{alert.userName || alert.sourceIp}</span>
           {alert.status && alert.status !== "new" ? (
-            <span className="shrink-0 rounded border border-soc-border/70 px-1.5 py-0.5 text-[10px] uppercase tracking-[0.1em] text-soc-muted">
+            <span className="shrink-0 rounded border border-soc-border px-1.5 py-0.5 text-[10px] capitalize text-soc-muted">
               {alert.status}
             </span>
           ) : null}
@@ -112,7 +110,7 @@ function AlertCard({ alert, onOpen }) {
   );
 }
 
-export default function AlertFeed({ maxItems = null, showHeader = true, items: alertItems = null }) {
+export default function AlertFeed({ maxItems = null, showHeader = true, items: alertItems = null, tall = false }) {
   const storedAlerts = useDashboardStore((state) => state.alerts.items);
   const alerts = alertItems ?? storedAlerts;
   const loading = useDashboardStore((state) => state.alerts.loading);
@@ -130,13 +128,13 @@ export default function AlertFeed({ maxItems = null, showHeader = true, items: a
   }, [alerts, maxItems]);
 
   return (
-    <section className="soc-glass flex h-full min-h-[360px] flex-col p-5">
+    <section className="soc-glass flex min-h-0 flex-col p-4">
       {showHeader && (
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <h2 className="soc-section-title">Alert queue</h2>
             <p className="mt-0.5 text-xs text-soc-muted">
-              {sortedAlerts.length} most recent · newest first
+              {sortedAlerts.length} most recent
             </p>
           </div>
           <span className="inline-flex items-center gap-1.5 text-xs capitalize text-soc-muted">
@@ -146,12 +144,12 @@ export default function AlertFeed({ maxItems = null, showHeader = true, items: a
         </div>
       )}
 
-      <div className="max-h-[520px] flex-1 space-y-2 overflow-y-auto pr-1">
+      <div className={`soc-scroll min-h-[8rem] flex-1 space-y-2 ${tall ? "max-h-[calc(100vh-16rem)]" : "max-h-[22rem] xl:max-h-[24rem]"}`}>
         {loading && sortedAlerts.length === 0 &&
-          [0, 1, 2].map((i) => <div key={i} className="h-[104px] animate-pulse rounded-xl bg-soc-panelSoft/60" />)}
+          [0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-lg bg-soc-panelSoft/60" />)}
         {!loading && sortedAlerts.length === 0 && (
-          <div className="rounded-xl border border-dashed border-soc-border p-6 text-center text-sm text-soc-muted">
-            No alerts yet. New verdicts will appear here as they arrive.
+          <div className="rounded-lg border border-dashed border-soc-border p-6 text-center text-sm text-soc-muted">
+            No alerts yet.
           </div>
         )}
         {sortedAlerts.map((alert) => (

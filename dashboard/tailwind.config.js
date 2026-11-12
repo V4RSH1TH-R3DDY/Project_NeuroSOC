@@ -4,26 +4,25 @@ export default {
     extend: {
       colors: {
         soc: {
-          bg: "#05070d",
-          panel: "#0a0e18",
-          panelSoft: "#0f1523",
-          border: "#1a2233",
-          text: "#eef2fa",
-          muted: "#8a93a8",
-          electric: "#5b93ff",
-          // Verdict tones stay within one blue family: bright = threat, mid = review, dim = normal.
-          red: "#e6edff",
-          amber: "#7ea6ff",
-          green: "#46557a",
+          bg: "#0b0f17",
+          panel: "#111723",
+          panelSoft: "#171f2e",
+          border: "#252f42",
+          text: "#e8edf5",
+          muted: "#8b95a8",
+          electric: "#4f8cff",
+          red: "#f26b6b",
+          amber: "#f0b44c",
+          green: "#3fbf8c",
         },
+      },
+      boxShadow: {
+        panel: "0 8px 24px -12px rgba(0,0,0,0.6)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
         mono: ["'IBM Plex Mono'", "ui-monospace", "monospace"],
         display: ["'Playfair Display'", "Georgia", "serif"],
-      },
-      boxShadow: {
-        panel: "inset 0 1px 0 rgba(255,255,255,0.05), 0 30px 60px -30px rgba(0,0,0,0.85)",
       },
     },
   },

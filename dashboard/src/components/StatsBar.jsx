@@ -4,13 +4,13 @@ import { useDashboardStore } from "../store/dashboardStore";
 
 function StatCard({ label, value, hint, accent }) {
   return (
-    <article className="soc-glass flex flex-col justify-between px-5 py-4">
-      <div className="flex items-center gap-2">
-        <span className={`h-1.5 w-1.5 rounded-full ${accent}`} />
-        <p className="text-xs font-medium text-soc-muted">{label}</p>
-      </div>
-      <p className="soc-tabular mt-3 text-[28px] font-medium leading-none tracking-tight text-soc-text">{value}</p>
-      <p className="mt-2 text-xs text-soc-muted">{hint}</p>
+    <article className="soc-glass px-4 py-3">
+      <p className="flex items-center gap-2 text-xs font-medium text-soc-muted">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${accent}`} />
+        <span className="truncate">{label}</span>
+      </p>
+      <p className="soc-tabular mt-2 text-2xl font-semibold leading-none text-soc-text">{value}</p>
+      <p className="mt-1.5 truncate text-xs text-soc-muted">{hint}</p>
     </article>
   );
 }
@@ -22,25 +22,25 @@ export default function StatsBar() {
   const cards = useMemo(
     () => [
       {
-        label: "Sessions analysed",
+        label: "Sessions",
         value: Number(stats.totalTransactions || 0).toLocaleString(),
-        hint: "Scored by the decision layer",
+        hint: "Scored by the engine",
         accent: "bg-soc-electric",
       },
       {
-        label: "Confirmed threats",
+        label: "Threats",
         value: Number(stats.hackerDetections || 0).toLocaleString(),
-        hint: "Routed to sandbox isolation",
+        hint: "Sent to the sandbox",
         accent: "bg-soc-red",
       },
       {
         label: "Average risk",
         value: `${Number(stats.avgRiskScore || 0).toFixed(1)}%`,
-        hint: "Mean risk score across analyzed sessions",
+        hint: "Mean across sessions",
         accent: "bg-soc-amber",
       },
       {
-        label: DEMO_DATA_ENABLED ? "Events in demo feed" : "Recent events",
+        label: "Events",
         value: Number(DEMO_DATA_ENABLED ? demoAlertCount : stats.liveAlerts || 0).toLocaleString(),
         hint: DEMO_DATA_ENABLED ? "Seeded examples plus generated stream" : "Available for investigation",
         accent: "bg-soc-green",
@@ -50,7 +50,7 @@ export default function StatsBar() {
   );
 
   return (
-    <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {cards.map((card) => (
         <StatCard key={card.label} {...card} />
       ))}

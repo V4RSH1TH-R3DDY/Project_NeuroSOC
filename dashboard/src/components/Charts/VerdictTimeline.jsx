@@ -1,103 +1,64 @@
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useMemo } from "react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { describeWindow, formatClock } from "../../lib/timeline";
 
 const SERIES = [
-  { key: "HACKER", label: "Threat", color: "#e6edff" },
-  { key: "FORGETFUL_USER", label: "Review", color: "#7ea6ff" },
-  { key: "LEGITIMATE", label: "Normal", color: "#5b93ff" },
+  { key: "HACKER", label: "Threat", color: "#f26b6b" },
+  { key: "FORGETFUL_USER", label: "Review", color: "#f0b44c" },
+  { key: "LEGITIMATE", label: "Normal", color: "#3fbf8c" },
 ];
-
-const AXIS = { fill: "#8a93a8", fontSize: 11 };
+const AXIS = { fill: "#8b95a8", fontSize: 11 };
 
 export default function VerdictTimeline({ data }) {
   const rows = Array.isArray(data) ? data : [];
   const totals = useMemo(
-    () =>
-      SERIES.reduce((acc, series) => {
-        acc[series.key] = rows.reduce((sum, row) => sum + (Number(row[series.key]) || 0), 0);
-        return acc;
-      }, {}),
+    () => Object.fromEntries(SERIES.map((s) => [s.key, rows.reduce((sum, r) => sum + (r[s.key] || 0), 0)])),
     [rows]
   );
+  const empty = SERIES.every((s) => totals[s.key] === 0);
+  const win = describeWindow(rows);
 
   return (
-    <section className="soc-glass p-5">
-      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <section className="soc-glass p-4">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="soc-section-title">Verdicts over time</h2>
-          <p className="mt-0.5 text-xs text-soc-muted">Classifier outcomes per interval</p>
+          <h2 className="soc-section-title">Verdicts, last {win.label}</h2>
+          <p className="mt-0.5 text-xs text-soc-muted">Per {win.bucket}</p>
         </div>
-        <div className="flex gap-5">
-          {SERIES.map((series) => (
-            <div key={series.key} className="min-w-[64px]">
-              <div className="flex items-center gap-1.5 text-xs text-soc-muted">
-                <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: series.color }} />
-                {series.label}
-              </div>
-              <p className="soc-tabular mt-1 text-lg font-semibold text-soc-text">{totals[series.key].toLocaleString()}</p>
+        <div className="flex gap-4">
+          {SERIES.map((s) => (
+            <div key={s.key}>
+              <p className="flex items-center gap-1.5 text-xs text-soc-muted">
+                <span className="h-2 w-2 rounded-sm" style={{ background: s.color }} />
+                {s.label}
+              </p>
+              <p className="soc-tabular text-lg font-semibold text-soc-text">{totals[s.key].toLocaleString()}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="h-[340px]">
+      <div className="relative h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={rows} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-            <defs>
-              {SERIES.map((series) => (
-                <linearGradient key={series.key} id={`gradient-${series.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={series.color} stopOpacity={0.22} />
-                  <stop offset="100%" stopColor={series.color} stopOpacity={0} />
-                </linearGradient>
-              ))}
-            </defs>
-            <CartesianGrid stroke="#1a2233" strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="time"
-              tickFormatter={(value) =>
-                new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-              }
-              tick={AXIS}
-              tickLine={false}
-              axisLine={false}
-              minTickGap={24}
-            />
-            <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={40} />
+          <AreaChart data={rows} margin={{ top: 8, right: 20, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke="#252f42" strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="time" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={formatClock} tick={AXIS} tickLine={false} axisLine={false} minTickGap={48} />
+            <YAxis allowDecimals={false} tick={AXIS} tickLine={false} axisLine={false} width={36} />
             <Tooltip
-              cursor={{ stroke: "#2a3450" }}
-              contentStyle={{
-                background: "#0a0e18",
-                border: "1px solid #1a2233",
-                borderRadius: "6px",
-                color: "#eef2fa",
-                fontSize: 12,
-              }}
-              labelStyle={{ color: "#8a93a8", marginBottom: 4 }}
-              formatter={(value, name) => [value, SERIES.find((s) => s.key === name)?.label || name]}
-              labelFormatter={(value) => new Date(value).toLocaleString()}
+              cursor={{ stroke: "#33415c" }}
+              contentStyle={{ background: "#111723", border: "1px solid #252f42", borderRadius: 8, color: "#e8edf5", fontSize: 12 }}
+              labelStyle={{ color: "#8b95a8" }}
+              labelFormatter={formatClock}
+              formatter={(v, name) => [v, SERIES.find((s) => s.key === name)?.label || name]}
             />
-            {SERIES.map((series) => (
-              <Area
-                key={series.key}
-                type="monotone"
-                dataKey={series.key}
-                stroke={series.color}
-                fill={`url(#gradient-${series.key})`}
-                strokeWidth={1.75}
-                dot={false}
-                activeDot={{ r: 3 }}
-              />
+            {SERIES.map((s) => (
+              <Area key={s.key} type="monotone" dataKey={s.key} stroke={s.color} fill={s.color} fillOpacity={0.25} strokeWidth={1.5} dot={false} isAnimationActive={false} />
             ))}
           </AreaChart>
         </ResponsiveContainer>
+        {empty ? (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-soc-muted">No verdicts in this window yet.</p>
+        ) : null}
       </div>
     </section>
   );

@@ -111,7 +111,7 @@ async function geocodeIp(sourceIp) {
   };
 }
 
-export default function ThreatMap({ compact = true }) {
+export default function ThreatMap({ compact = false }) {
   const threatEvents = useDashboardStore((state) => state.threatMap.items);
   const mapRef = useRef(null);
   const mapNodeRef = useRef(null);
@@ -129,15 +129,6 @@ export default function ThreatMap({ compact = true }) {
 
     return `${threatEvents.length} confirmed threat${threatEvents.length === 1 ? "" : "s"} located by source IP.`;
   }, [threatEvents]);
-
-  const mapSettings = useMemo(
-    () => [
-      { label: "Basemap", value: "Esri Dark Gray" },
-      { label: "Geolocation", value: "ip-api.com" },
-      { label: "Window", value: "Last 24 hours" },
-    ],
-    []
-  );
 
   const legend = useMemo(
     () => [
@@ -280,7 +271,7 @@ export default function ThreatMap({ compact = true }) {
 
   return (
     <section
-      className={`soc-glass pointer-events-auto overflow-hidden p-5 ${
+      className={`soc-glass pointer-events-auto overflow-hidden p-4 ${
         compact ? "h-[390px] w-full" : ""
       }`}
     >
@@ -304,86 +295,59 @@ export default function ThreatMap({ compact = true }) {
           </div>
         </>
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(280px,0.9fr)]">
-          <div className="space-y-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0">
+            <div className="mb-3 flex items-start justify-between gap-3">
               <div>
-                <p className="soc-kicker">Threat Map</p>
-                <h2 className="mt-1 text-lg font-medium tracking-tight text-soc-text">Threat origins</h2>
-                <p className="mt-2 max-w-2xl text-sm text-soc-muted">{threatSummary}</p>
+                <h2 className="soc-section-title">Threat origins</h2>
+                <p className="mt-0.5 text-xs text-soc-muted">{threatSummary}</p>
               </div>
-              <div className="rounded-xl border border-soc-border/80 bg-soc-panelSoft/40 px-4 py-3">
-                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-soc-muted">Live markers</p>
-                <p className="mt-1 text-lg font-medium text-soc-text">{resolvedEvents.length}</p>
-                <p className="mt-1 text-xs text-soc-muted">{isResolving ? "Updating geocodes..." : "Ready"}</p>
-              </div>
+              <span className="soc-tabular shrink-0 rounded-md border border-soc-border bg-soc-panelSoft px-2 py-1 text-xs text-soc-muted">
+                {isResolving ? "Locating…" : `${resolvedEvents.length} markers`}
+              </span>
             </div>
-
-            <div className="relative h-[560px] overflow-hidden rounded-2xl border border-soc-border/80">
+            <div className="relative h-[28rem] overflow-hidden rounded-lg border border-soc-border xl:h-[34rem]">
               <div ref={mapNodeRef} className="h-full w-full" />
               {isResolving && resolvedEvents.length === 0 ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-soc-panel/60 text-sm text-soc-muted">
-                  Resolving threat origins...
-                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-soc-panel/70 text-sm text-soc-muted">Locating threat origins…</div>
               ) : null}
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-soc-border/80 bg-soc-panelSoft/40 p-4">
+          <aside className="flex min-h-0 flex-col gap-3 xl:h-[38.5rem]">
+            <div className="soc-inset p-3">
               <p className="soc-kicker">Legend</p>
-              <div className="mt-4 space-y-3">
+              <ul className="mt-2 space-y-1.5">
                 {legend.map((item) => (
-                  <div key={item.label} className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-                      <div className={`soc-threat-marker ${bandClass(item.score)}`} style={{ "--size": `${markerSize(item.score)}px` }}>
-                        <span className="soc-threat-halo" />
+                  <li key={item.label} className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center">
+                      <span className={`soc-threat-marker ${bandClass(item.score)}`} style={{ "--size": `${Math.min(markerSize(item.score), 18)}px` }}>
                         <span className="soc-threat-ring" />
-                        <span className="soc-threat-ring soc-threat-ring-late" />
                         <span className="soc-threat-core" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-soc-text">{item.label}</p>
-                      <p className="text-xs text-soc-muted">{item.detail}</p>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                    <span className="text-sm text-soc-text">{item.label} <span className="text-xs text-soc-muted">· {item.detail}</span></span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
-            <div className="rounded-2xl border border-soc-border/80 bg-soc-panelSoft/40 p-4">
-              <p className="soc-kicker">Map Settings</p>
-              <div className="mt-4 space-y-3">
-                {mapSettings.map((item) => (
-                  <div key={item.label} className="flex items-center justify-between gap-3 border-b border-soc-border/40 pb-2 last:border-none last:pb-0">
-                    <span className="text-sm text-soc-muted">{item.label}</span>
-                    <span className="text-sm font-medium text-soc-text">{item.value}</span>
-                  </div>
+            <div className="soc-inset flex min-h-0 flex-1 flex-col p-3">
+              <p className="soc-kicker">Recent signals</p>
+              <ul className="soc-scroll mt-2 max-h-72 flex-1 space-y-2 xl:max-h-none">
+                {resolvedEvents.length === 0 ? <li className="text-sm text-soc-muted">No located markers yet.</li> : null}
+                {resolvedEvents.slice(0, 20).map((event) => (
+                  <li key={`${event.id}-${event.timestamp}`} className="rounded-md border border-soc-border bg-soc-panel p-2.5">
+                    <p className="flex items-center justify-between gap-2 text-xs text-soc-muted">
+                      <span className="truncate">{event.userName}</span>
+                      <span className="soc-tabular shrink-0">{formatPercent(event.score)}</span>
+                    </p>
+                    <p className="mt-1 text-sm text-soc-text">{event.label}</p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
-
-            <div className="rounded-2xl border border-soc-border/80 bg-soc-panelSoft/40 p-4">
-              <p className="soc-kicker">Recent Signals</p>
-              <div className="mt-4 space-y-3">
-                {resolvedEvents.length === 0 ? (
-                  <p className="text-sm text-soc-muted">No geolocated markers yet.</p>
-                ) : (
-                  resolvedEvents.slice(0, 5).map((event) => (
-                    <div key={`${event.id}-${event.timestamp}`} className="rounded-xl border border-soc-border/70 bg-soc-panel/55 p-3">
-                      <div className="flex items-center justify-between gap-3 text-xs text-soc-muted">
-                        <span>{event.userName}</span>
-                        <span>{formatPercent(event.score)}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-soc-text">{event.label}</p>
-                      <p className="mt-1 text-xs text-soc-muted">{getRiskBand(event.score)} risk band</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
+          </aside>
         </div>
       )}
     </section>

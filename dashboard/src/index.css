@@ -7,17 +7,16 @@
 }
 
 html {
-  background: #05070d;
+  background: #0b0f17;
+  /* Always reserve the scrollbar so layouts do not jump between short and long pages. */
+  overflow-y: scroll;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(70% 45% at 50% -10%, rgba(40, 90, 220, 0.28), transparent 70%),
-    #05070d;
-  background-attachment: fixed;
-  color: #eef2fa;
+  background: #0b0f17;
+  color: #e8edf5;
   font-family: "Inter", system-ui, sans-serif;
   font-feature-settings: "cv11", "ss01", "tnum";
   -webkit-font-smoothing: antialiased;
@@ -29,166 +28,34 @@ body {
 }
 
 ::selection {
-  background: rgba(91, 147, 255, 0.35);
-}
-
-.soc-dots {
-  background-image: radial-gradient(rgba(140, 180, 255, 0.55) 1px, transparent 1.7px);
-  background-size: 10px 10px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 0%, #000 15%, transparent 72%);
-  mask-image: radial-gradient(ellipse 70% 80% at 50% 0%, #000 15%, transparent 72%);
-}
-
-.soc-num {
-  background: linear-gradient(180deg, #dce8ff 0%, #5b93ff 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Keep the CardSwap stack centred inside its stage instead of hanging off the corner. */
-.soc-swap-stage .card-swap-container {
-  top: 50%;
-  left: 50%;
-  right: auto;
-  bottom: auto;
-  transform: translate(calc(-50% - 40px), calc(-50% + 40px)) !important;
-}
-
-@media (max-width: 640px) {
-  .soc-swap-stage .card-swap-container {
-    transform: translate(calc(-50% - 30px), calc(-50% + 30px)) scale(0.8) !important;
-  }
-}
-
-/* ── Motion ─────────────────────────────────────────────── */
-.soc-reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition:
-    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms),
-    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms),
-    border-color 0.3s ease,
-    box-shadow 0.3s ease;
-}
-
-.soc-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
-
-.soc-rise {
-  animation: socRise 0.9s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms) both;
-}
-
-.soc-lift.is-in:hover {
-  transform: translateY(-3px);
-  border-color: rgba(111, 159, 255, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 30px 60px -30px rgba(47, 95, 224, 0.55);
-  transition-delay: 0ms;
-}
-
-.soc-drift {
-  will-change: transform;
-  animation: socDrift 16s ease-in-out infinite;
-}
-
-.soc-drift-alt {
-  animation-duration: 11s;
-  animation-direction: reverse;
-}
-
-.soc-drift-slow {
-  animation-duration: 22s;
-}
-
-.soc-pulse-glow {
-  animation: socPulse 6s ease-in-out infinite;
-}
-
-.soc-shimmer {
-  background: linear-gradient(100deg, #6f9fff 0%, #6f9fff 40%, #d6e4ff 50%, #6f9fff 60%, #6f9fff 100%);
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: socShimmer 5s ease-in-out 1.2s infinite;
-}
-
-.soc-fade-in {
-  animation: socFadeIn 1.6s ease 0.2s both;
-}
-
-@keyframes socFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.soc-enter {
-  animation: socEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes socRise {
-  from { opacity: 0; transform: translateY(18px); filter: blur(6px); }
-  to { opacity: 1; transform: none; filter: none; }
-}
-
-@keyframes socDrift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-60px, 30px, 0) scale(1.1); }
-}
-
-@keyframes socPulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 1; }
-}
-
-@keyframes socShimmer {
-  0% { background-position: 100% 0; }
-  60%, 100% { background-position: 0% 0; }
-}
-
-@keyframes socEnter {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .soc-reveal,
-  .soc-rise {
-    opacity: 1 !important;
-    transform: none !important;
-    filter: none !important;
-  }
+  background: rgba(79, 140, 255, 0.35);
 }
 
 @layer components {
   .soc-shell {
-    @apply mx-auto w-full max-w-[1680px] px-4 pb-10 pt-6 md:px-6 lg:px-8;
+    @apply mx-auto w-full max-w-[1440px] px-4 pb-12 pt-6 md:px-6;
   }
 
   .soc-glass {
+    min-width: 0;
     overflow-wrap: break-word;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.01)), #0a0e18;
-    @apply rounded-[20px] border border-soc-border shadow-panel;
+    @apply rounded-xl border border-soc-border bg-soc-panel;
   }
 
   .soc-inset {
-    @apply rounded-xl border border-soc-border bg-soc-panelSoft;
+    @apply rounded-lg border border-soc-border bg-soc-panelSoft;
   }
 
   .soc-kicker {
-    @apply text-xs font-normal text-soc-muted;
+    @apply text-xs font-medium text-soc-muted;
   }
 
   .soc-title {
-    @apply text-2xl font-light leading-tight tracking-[-0.02em] text-soc-text md:text-[30px];
+    @apply text-xl font-semibold leading-tight tracking-tight text-soc-text md:text-2xl;
   }
 
   .soc-section-title {
-    @apply text-base font-medium tracking-[-0.01em] text-soc-text;
+    @apply text-sm font-semibold text-soc-text;
   }
 
   .soc-tabular {
@@ -196,11 +63,20 @@ body {
   }
 
   .soc-btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-soc-border bg-soc-panelSoft px-3 py-1.5 text-xs font-medium text-soc-text transition-colors hover:border-soc-electric/50 hover:bg-soc-panelSoft/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-soc-electric/50 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-soc-border bg-soc-panelSoft px-3 py-1.5 text-xs font-medium text-soc-text transition-colors hover:border-soc-electric/60 focus:outline-none focus-visible:ring-2 focus-visible:ring-soc-electric/50 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .soc-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-3.5 py-1.5 text-xs font-medium text-[#05070d] transition hover:bg-white/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-soc-electric/50 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-soc-electric px-3.5 py-1.5 text-xs font-semibold text-white transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-soc-electric/50 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .soc-btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-soc-red/50 px-3 py-1.5 text-xs font-medium text-soc-red transition-colors hover:bg-soc-red/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-soc-red/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* A scroll area that is contained inside its card, so the page itself keeps scrolling. */
+  .soc-scroll {
+    @apply overflow-y-auto overscroll-contain pr-1;
   }
 }
 
