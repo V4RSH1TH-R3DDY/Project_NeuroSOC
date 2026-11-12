@@ -9,3 +9,6 @@ export const UNIVERSAL_ENABLED = String(import.meta.env.VITE_UNIVERSAL_ENABLED |
 // Shows the NovaTrust demo's "Security Testing" panel. Both sides must agree: the API must also run with
 // NEUROSOC_DEMO_MODE=true (the panel additionally checks GET /api/v1/demo/config, so a mismatch hides it).
 export const DEMO_MODE_ENABLED = String(import.meta.env.VITE_DEMO_MODE || "false").toLowerCase() === "true";
+
+// The Network Health page (outage prediction). Off unless the backend runs with ENABLE_NETHEALTH=true.
+export const NETHEALTH_ENABLED = String(import.meta.env.VITE_NETHEALTH_ENABLED || "false").toLowerCase() === "true";

@@ -276,6 +276,17 @@ SANDBOX_SERVICE_TOKEN = os.getenv("SANDBOX_SERVICE_TOKEN", "").strip()
 # when false, no SDK route, middleware or storage is added and the service behaves as before.
 ENABLE_UNIVERSAL_ENGINE = _read_bool_env("ENABLE_UNIVERSAL_ENGINE", "false")
 UNIVERSAL_HASH_SECRET = os.getenv("UNIVERSAL_HASH_SECRET", "").strip()
+# Network health monitoring and outage prediction (api/routes/nethealth.py). Off by default.
+# NETHEALTH_SIMULATOR feeds it a simulated fleet (demo); turn it off when real telemetry is pushed to /ingest.
+ENABLE_NETHEALTH = _read_bool_env("ENABLE_NETHEALTH", "false")
+NETHEALTH_SIMULATOR = _read_bool_env("NETHEALTH_SIMULATOR", "true")
+NETHEALTH_TICK_SECONDS = float(os.getenv("NETHEALTH_TICK_SECONDS", "2"))
+NETHEALTH_BLEND = os.getenv("NETHEALTH_BLEND", "rules")  # rules | learned | max | mean | guarded (see scripts/nethealth_backtest.py)
+NETHEALTH_HOST_COLLECTOR = _read_bool_env("NETHEALTH_HOST_COLLECTOR", "true")  # report this machine as a live device
+NETHEALTH_HOST_INTERVAL = float(os.getenv("NETHEALTH_HOST_INTERVAL", "10"))
+NETHEALTH_PROMETHEUS_URL = os.getenv("NETHEALTH_PROMETHEUS_URL", "").strip()  # pull node_exporter/snmp_exporter metrics
+NETHEALTH_PROMETHEUS_INTERVAL = float(os.getenv("NETHEALTH_PROMETHEUS_INTERVAL", "15"))
+NETHEALTH_SYSLOG_PORT = int(os.getenv("NETHEALTH_SYSLOG_PORT", "0"))  # UDP port for device syslog; 0 = off
 UNIVERSAL_SITES_FILE = os.getenv("UNIVERSAL_SITES_FILE", "").strip()
 BEHAVIOR_EVENTS_TOPIC = os.getenv("BEHAVIOR_EVENTS_TOPIC", "behavior-events")
 IPINFO_TOKEN = os.getenv("IPINFO_TOKEN", "").strip()
@@ -2695,6 +2706,11 @@ class InferenceRuntime:
 
     def _handle_verdict(self, verdict: ThreatVerdict) -> ThreatVerdict:
         VERDICTS_TOTAL.labels(verdict=verdict.verdict).inc()
+        if nethealth_monitor is not None and verdict.user_id != "nethealth-probe":
+            try:  # real attack traffic raises attack pressure on the network's edge devices
+                nethealth_monitor.ingest_verdict(verdict.to_dict())
+            except Exception as exc:  # noqa: BLE001 - monitoring must never break detection
+                log.warning("Network health could not record a verdict: %s", type(exc).__name__)
         self._persist_verdict(verdict)
         tenant_id = str(getattr(verdict, "tenant_id", "local"))
         canonical_verdict = verdict.to_dict()
@@ -2992,15 +3008,46 @@ async def lifespan(_: FastAPI):
     if restored:
         log.info("Restored %d portal session(s) from Redis.", restored)
     runtime.start()
+    nethealth_tasks: list[asyncio.Task] = []
+    nethealth_transport = None
+    if nethealth_monitor is not None:
+        from api.routes import nethealth as nh_routes
+        from core.nethealth.collectors import HostCollector, PrometheusCollector, start_syslog_listener
+        if nethealth_monitor.simulator is not None:
+            nethealth_tasks.append(asyncio.create_task(nh_routes.run_simulator(nethealth_monitor, NETHEALTH_TICK_SECONDS)))
+        host = HostCollector()
+        if NETHEALTH_HOST_COLLECTOR and host.available():
+            nethealth_tasks.append(asyncio.create_task(nh_routes.run_host_collector(nethealth_monitor, host, NETHEALTH_HOST_INTERVAL)))
+            nethealth_monitor.sources["host"] = {"device_id": host.device_id, "interval_s": NETHEALTH_HOST_INTERVAL}
+        if NETHEALTH_PROMETHEUS_URL:
+            try:
+                nethealth_tasks.append(asyncio.create_task(nh_routes.run_prometheus_collector(
+                    nethealth_monitor, PrometheusCollector(NETHEALTH_PROMETHEUS_URL), NETHEALTH_PROMETHEUS_INTERVAL)))
+                nethealth_monitor.sources["prometheus"] = {"url": NETHEALTH_PROMETHEUS_URL}
+            except ValueError as exc:
+                log.error("Network health Prometheus collector disabled: %s", exc)
+        if NETHEALTH_SYSLOG_PORT:
+            try:
+                nethealth_transport = await start_syslog_listener(nethealth_monitor, "0.0.0.0", NETHEALTH_SYSLOG_PORT)
+                nethealth_monitor.sources["syslog"] = {"udp_port": NETHEALTH_SYSLOG_PORT}
+            except OSError as exc:
+                log.error("Network health syslog listener could not start: %s", exc)
     try:
         yield
     finally:
+        for task in nethealth_tasks:
+            task.cancel()
+        if nethealth_transport is not None:
+            nethealth_transport.close()
         runtime.stop()
         if REDIS_CLIENT is not None:
             try:
                 REDIS_CLIENT.close()
             except Exception as exc:
                 log.warning("Could not close Redis client cleanly: %s", type(exc).__name__)
+
+
+nethealth_monitor = None  # set below when ENABLE_NETHEALTH is on
 
 
 app = FastAPI(title="NeuroShield Inference Service", version="0.9.0", lifespan=lifespan)
@@ -4351,6 +4398,28 @@ if ENABLE_UNIVERSAL_ENGINE:
     ), extra_routers=_demo_routers))
     app.add_middleware(SdkCorsMiddleware, origin_allowed=universal_sites.origin_allowed_anywhere)
     log.info("Universal behavioral engine enabled (scorer: %s).", universal_engine.scorer.name)
+
+
+if ENABLE_NETHEALTH:
+    from api.routes.nethealth import build_router as build_nethealth_router
+    from core.nethealth import NetHealthMonitor, NetworkSimulator
+    from core.nethealth.forecaster import Forecaster
+
+    def _nethealth_probe(features: dict[str, float]) -> dict[str, Any] | None:
+        """Classify simulated edge traffic with the same models that protect the SOC; attacks also reach the Intel Feed."""
+        import random as _random
+        verdict = runtime.engine.analyze_session({
+            "session_id": f"nethealth-{uuid.uuid4().hex[:12]}", "user_id": "nethealth-probe",
+            "source_ip": f"203.0.113.{_random.randint(2, 250)}",  # TEST-NET-3: documentation addresses, never real hosts
+            "flow_features": features, "raw_flow_features": features, "timestamp": time.time()})
+        if str(verdict.xgb_class).upper() not in {"BENIGN", "INCONCLUSIVE"}:
+            runtime._handle_verdict(verdict)  # attacks are persisted and alerted like any other verdict
+        return {"xgb_class": verdict.xgb_class, "verdict": verdict.verdict, "confidence": verdict.confidence, "source": "models"}
+
+    nethealth_monitor = NetHealthMonitor(NetworkSimulator() if NETHEALTH_SIMULATOR else None, forecaster=Forecaster.load(),
+                                         blend=NETHEALTH_BLEND, traffic_probe=_nethealth_probe)
+    app.include_router(build_nethealth_router(nethealth_monitor, _universal_roles))
+    log.info("Network health monitoring enabled (%s).", "simulated fleet" if NETHEALTH_SIMULATOR else "external telemetry")
 
 
 if NEUROSOC_DEMO_MODE and not ENABLE_UNIVERSAL_ENGINE:

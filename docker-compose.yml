@@ -168,6 +168,7 @@ services:
           - inference-proxy
     ports:
       - "${HOST_BIND:-127.0.0.1}:8000:8000"
+      - "${HOST_BIND:-127.0.0.1}:5142:5142/udp"
     depends_on:
       kafka:
         condition: service_healthy
@@ -188,6 +189,13 @@ services:
       PYTHONPATH: /app:/sdk/python
       # NeuroSOC SDK / universal behavioral engine (off unless set in .env)
       ENABLE_UNIVERSAL_ENGINE: ${ENABLE_UNIVERSAL_ENGINE:-false}
+      ENABLE_NETHEALTH: ${ENABLE_NETHEALTH:-false}
+      NETHEALTH_SIMULATOR: ${NETHEALTH_SIMULATOR:-true}
+      NETHEALTH_TICK_SECONDS: ${NETHEALTH_TICK_SECONDS:-2}
+      NETHEALTH_BLEND: ${NETHEALTH_BLEND:-rules}
+      NETHEALTH_HOST_COLLECTOR: ${NETHEALTH_HOST_COLLECTOR:-true}
+      NETHEALTH_PROMETHEUS_URL: ${NETHEALTH_PROMETHEUS_URL:-}
+      NETHEALTH_SYSLOG_PORT: ${NETHEALTH_SYSLOG_PORT:-0}
       UNIVERSAL_HASH_SECRET: ${UNIVERSAL_HASH_SECRET:-}
       UNIVERSAL_WEBHOOK_ALLOW_PRIVATE: ${UNIVERSAL_WEBHOOK_ALLOW_PRIVATE:-false}
       UNIVERSAL_SITES_FILE: ${UNIVERSAL_SITES_FILE:-}
@@ -324,6 +332,7 @@ services:
         VITE_OIDC_REQUIRED: ${VITE_OIDC_REQUIRED:-false}
         # Shows the SDK Protection page; pair with ENABLE_UNIVERSAL_ENGINE=true on inference.
         VITE_UNIVERSAL_ENABLED: ${VITE_UNIVERSAL_ENABLED:-false}
+        VITE_NETHEALTH_ENABLED: ${VITE_NETHEALTH_ENABLED:-false}
         VITE_MODEL_INTEGRATION_ENABLED: "true"
     profiles: ["phase11plus", "demo"]
     networks:

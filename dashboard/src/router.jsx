@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 import AppShell from "./components/AppShell";
-import { UNIVERSAL_ENABLED } from "./lib/featureFlags";
+import { NETHEALTH_ENABLED, UNIVERSAL_ENABLED } from "./lib/featureFlags";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const IntelFeedPage = lazy(() => import("./pages/IntelFeed"));
@@ -9,6 +9,7 @@ const ResponseOpsPage = lazy(() => import("./pages/ResponseOps"));
 const NotFoundPage = lazy(() => import("./pages/NotFound"));
 const AuthCallbackPage = lazy(() => import("./pages/AuthCallback"));
 const ProtectionPage = lazy(() => import("./pages/Protection"));
+const NetworkHealthPage = lazy(() => import("./pages/NetworkHealth"));
 const CustomerDemoPage = lazy(() => import("./pages/CustomerDemo"));
 
 function LazyPage({ children }) {
@@ -70,6 +71,16 @@ const router = createBrowserRouter([
             element: (
               <LazyPage>
                 <ProtectionPage />
+              </LazyPage>
+            ),
+          }]
+        : []),
+      ...(NETHEALTH_ENABLED
+        ? [{
+            path: "network-health",
+            element: (
+              <LazyPage>
+                <NetworkHealthPage />
               </LazyPage>
             ),
           }]
